@@ -1,0 +1,42 @@
+name: MacOS SSH to GitHub Actions
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ssh:
+    runs-on: macos-10.15
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: SSH Keepalive Hack
+      run: |
+        mkdir -p ~/.ssh
+        cat << EOF > ~/.ssh/config
+        Host *
+            ServerAliveInterval 60
+            StrictHostKeyChecking no
+        Host github.com
+            User git
+            Port 22
+            Hostname github.com
+            TCPKeepAlive yes
+            IdentitiesOnly yes
+        EOF
+    - name: Start SSH via ngrok
+      continue-on-error: true
+      timeout-minutes: 350
+      uses: P3TERX/ssh2actions@main
+      with:
+        mode: ngrok
+      env:
+        # You can find this token here: https://dashboard.ngrok.com/auth/your-authtoken
+        NGROK_TOKEN: ${{ secrets.NGROK_TOKEN }}
+        # ngrok server region [us, eu, au, ap, sa, jp, in] (optional, default: us)
+        NGROK_REGION: us
+        # This password you will use when authorizing via SSH
+        SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+        # Send connection info to Telegram (optional)
+        #TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        #TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
